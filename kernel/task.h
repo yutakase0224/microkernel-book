@@ -39,6 +39,7 @@ struct task {
     list_t pages;                   // 利用中メモリページのリスト
     notifications_t notifications;  // 受信済みの通知
     struct message m;               // メッセージの一時保存領域
+    unsigned priority;              // タスクの優先度
 };
 
 extern list_t active_tasks;
@@ -54,3 +55,4 @@ void task_block(struct task *task);
 void task_switch(void);
 void task_dump(void);
 void task_init_percpu(void);
+struct task* get_next_task(void);

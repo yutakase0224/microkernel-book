@@ -14,6 +14,12 @@
         (__elem) ? LIST_CONTAINER(__elem, container, field) : NULL;            \
     })
 
+#define LIST_PEEK_FRONT(list, container, field)                                \
+    ({                                                                         \
+        list_elem_t *__elem = list_peek_front(list);                           \
+        (__elem) ? LIST_CONTAINER(__elem, container, field) : NULL;            \
+    })
+
 // list_elem_tへのポインタ (elem) から、それを含む構造体 (container) へのポインタを取得する。
 #define LIST_CONTAINER(elem, container, field)                                 \
     ((container *) ((vaddr_t) (elem) -offsetof(container, field)))
@@ -60,3 +66,6 @@ bool list_contains(list_t *list, list_elem_t *elem);
 void list_remove(list_elem_t *elem);
 void list_push_back(list_t *list, list_elem_t *new_tail);
 list_elem_t *list_pop_front(list_t *list);
+void list_insert(list_elem_t *prev, list_elem_t *next,
+                        list_elem_t *new);
+list_elem_t *list_peek_front(list_t *list);

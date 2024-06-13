@@ -5,7 +5,7 @@
 //
 //    prev <-> next  =>  prev <-> new <-> next
 //
-static void list_insert(list_elem_t *prev, list_elem_t *next,
+void list_insert(list_elem_t *prev, list_elem_t *next,
                         list_elem_t *new) {
     new->prev = prev;
     new->next = next;
@@ -106,4 +106,13 @@ list_elem_t *list_pop_front(list_t *list) {
     // ようにする。
     list_elem_nullify(head);
     return head;
+}
+
+// リストの先頭エントリを参照する。空の場合はNULLを返す。O(1)。
+list_elem_t *list_peek_front(list_t *list) {
+    if (list->next == list) {
+        return NULL;
+    }
+
+    return list->next;
 }

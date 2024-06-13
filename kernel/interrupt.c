@@ -84,9 +84,11 @@ void handle_timer_interrupt(unsigned ticks) {
 
     // 実行中タスクの残り実行可能時間を更新し、ゼロになったらタスク切り替えを行う
     struct task *current = CURRENT_TASK;
+    struct task *next = get_next_task();   // 次に実行するタスク
     DEBUG_ASSERT(current->quantum >= 0 || current == IDLE_TASK);
     current->quantum -= MIN(ticks, current->quantum);
-    if (!current->quantum) {
+    if ((next && next->priority > current->priority) || !current->quantum) {
+    // if (!current->quantum) {
         task_switch();
     }
 }

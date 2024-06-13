@@ -5,11 +5,16 @@
 #include "printk.h"
 #include <libs/common/list.h>
 #include <libs/common/string.h>
+#include <libs/common/print.h>
 
 static struct task tasks[NUM_TASKS_MAX];        // 全てのタスク管理構造体 (未使用含む)
 static struct task idle_tasks[NUM_CPUS_MAX];    // 各CPUのアイドルタスク
 static list_t runqueue = LIST_INIT(runqueue);   // ランキュー
 list_t active_tasks = LIST_INIT(active_tasks);  // 使用中の管理構造体のリスト
+
+struct task* get_next_task() {
+    return LIST_PEEK_FRONT(&runqueue, struct task, waitqueue_next);
+}
 
 // 次に実行するタスクを選択する。
 static struct task *scheduler(void) {
@@ -38,6 +43,7 @@ static error_t init_task_struct(struct task *task, task_t tid, const char *name,
     task->wait_for = IPC_DENY;
     task->ref_count = 0;
     task->pager = pager;
+    task->priority = 0;
 
     strcpy_safe(task->name, sizeof(task->name), name);
     list_elem_init(&task->waitqueue_next);
@@ -84,10 +90,17 @@ void task_switch(void) {
     if (prev->state == TASK_RUNNABLE) {
         // 実行中タスクが実行可能な状態ならば、実行可能なタスクのキューに戻す。
         // 与えられたCPU時間を使い切ったときに起きる。
-        list_push_back(&runqueue, &prev->waitqueue_next);
+        // list_push_back(&runqueue, &prev->waitqueue_next);
+        prev->state = TASK_BLOCKED;
+        task_resume(prev);
     }
 
     // タスクを切り替える
+    // debug
+    if (strcmp(prev->name, "(idle)") && strcmp(next->name, "(idle)")) {
+        INFO("task_switch: prev=%s, next=%s", prev->name, next->name);
+        INFO("timeout: prev=%d, next=%d", prev->timeout, next->timeout);
+    }
     CURRENT_TASK = next;
     arch_task_switch(prev, next);
 }
@@ -131,6 +144,16 @@ void task_resume(struct task *task) {
     DEBUG_ASSERT(task->state == TASK_BLOCKED);
 
     task->state = TASK_RUNNABLE;
+
+    // 優先度に基づいてランキューに挿入
+    LIST_FOR_EACH(iter, &runqueue, struct task, waitqueue_next) {
+        if (task->priority > iter->priority) {
+            list_insert(iter->waitqueue_next.prev, &iter->waitqueue_next, &task->waitqueue_next);
+            return;
+        }
+    }
+
+    // ランキューが空、または優先度が最も低い場合は末尾に追加
     list_push_back(&runqueue, &task->waitqueue_next);
 }
 

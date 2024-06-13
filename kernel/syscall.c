@@ -306,6 +306,16 @@ __noreturn static int sys_shutdown(void) {
     arch_shutdown();
 }
 
+static error_t sys_setpriority(task_t tid, unsigned priority) {
+    struct task *task = task_find(tid);
+    if (!task) {
+        return ERR_INVALID_TASK;
+    }
+
+    task->priority = priority;
+    return OK;
+}
+
 // システムコールハンドラ
 long handle_syscall(long a0, long a1, long a2, long a3, long a4, long n) {
     long ret;
@@ -361,6 +371,9 @@ long handle_syscall(long a0, long a1, long a2, long a3, long a4, long n) {
             break;
         case SYS_SHUTDOWN:
             ret = sys_shutdown();
+            break;
+        case SYS_SETPRIORITY:
+            ret = sys_setpriority(a0, a1);
             break;
         default:
             ret = ERR_INVALID_ARG;
